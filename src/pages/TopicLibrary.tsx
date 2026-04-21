@@ -18,6 +18,7 @@ const FilterPill = ({ label }: { label: string }) => (
 
 export default function TopicLibrary() {
   const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(topics.map((t) => [t.id, t.status === "monitoring"]))
   );
@@ -50,7 +51,10 @@ export default function TopicLibrary() {
         <FilterPill label="标签" />
         <FilterPill label="状态" />
         <div className="lg:ml-auto">
-          <Button className="h-10 px-5 bg-gradient-primary hover:opacity-95 shadow-primary text-primary-foreground font-medium">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="h-10 px-5 bg-gradient-primary hover:opacity-95 shadow-primary text-primary-foreground font-medium"
+          >
             <Plus className="w-4 h-4" /> 新建专题库
           </Button>
         </div>
