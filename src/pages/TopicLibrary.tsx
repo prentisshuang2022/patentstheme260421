@@ -172,16 +172,12 @@ export default function TopicLibrary() {
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(topics.map((t) => [t.id, t.status === "monitoring"]))
   );
 
-  const categoryOptions = useMemo(
-    () => Array.from(new Set(topics.map((t) => t.category))),
-    []
-  );
   const tagOptions = useMemo(
     () => Array.from(new Set(topics.flatMap((t) => t.tags))),
     []
@@ -192,7 +188,7 @@ export default function TopicLibrary() {
       topics.filter((t) => {
         if (query && !t.title.includes(query) && !t.category.includes(query)) return false;
         if (categoryFilter && t.category !== categoryFilter) return false;
-        if (tagFilter && !t.tags.includes(tagFilter)) return false;
+        if (tagFilters.length > 0 && !tagFilters.some((tag) => t.tags.includes(tag))) return false;
         if (statusFilter !== "all") {
           const enabled = states[t.id];
           if (statusFilter === "monitoring" && !enabled) return false;
@@ -200,7 +196,7 @@ export default function TopicLibrary() {
         }
         return true;
       }),
-    [query, categoryFilter, tagFilter, statusFilter, states]
+    [query, categoryFilter, tagFilters, statusFilter, states]
   );
 
   const statusLabel = STATUS_OPTIONS.find((s) => s.value === statusFilter)?.label ?? "状态";
@@ -226,19 +222,18 @@ export default function TopicLibrary() {
           />
         </div>
 
-        <FilterDropdown
+        <SingleFilterDropdown
           label="专题分类"
           value={categoryFilter}
-          options={categoryOptions}
+          options={CATEGORY_OPTIONS}
           onChange={setCategoryFilter}
           allLabel="全部分类"
         />
-        <FilterDropdown
+        <MultiFilterDropdown
           label="标签"
-          value={tagFilter}
+          values={tagFilters}
           options={tagOptions}
-          onChange={setTagFilter}
-          allLabel="全部标签"
+          onChange={setTagFilters}
         />
 
         {/* 状态下拉（固定枚举） */}
