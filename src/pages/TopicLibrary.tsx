@@ -288,7 +288,7 @@ export default function TopicLibrary() {
             onClick={() => {
               setQuery("");
               setCategoryFilter(null);
-              setTagFilter(null);
+              setTagFilters([]);
               setStatusFilter("all");
             }}
             className="mt-3 text-sm text-primary hover:underline"
