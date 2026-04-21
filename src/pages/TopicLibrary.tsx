@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { topics } from "@/data/topics";
 import { cn } from "@/lib/utils";
+import { CreateTopicDialog } from "@/components/topic/CreateTopicDialog";
 
 const FilterPill = ({ label }: { label: string }) => (
   <button className="h-10 px-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card text-sm text-foreground/80 hover:border-primary/40 hover:text-foreground transition-colors">
