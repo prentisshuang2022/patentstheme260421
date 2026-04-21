@@ -25,7 +25,23 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "paused", label: "未监控" },
 ];
 
-interface FilterDropdownProps {
+export const CATEGORY_OPTIONS = [
+  "人工智能与数据智能",
+  "半导体与电子信息",
+  "通信与网络",
+  "智能制造与工业装备",
+  "新能源与储能",
+  "新材料",
+  "生物医药与医疗器械",
+  "汽车与智能交通",
+  "航空航天与无人系统",
+  "环保与绿色低碳",
+  "消费电子与智能终端",
+  "农业与食品科技",
+  "其他",
+];
+
+interface SingleFilterDropdownProps {
   label: string;
   value: string | null;
   options: string[];
@@ -33,7 +49,7 @@ interface FilterDropdownProps {
   allLabel?: string;
 }
 
-const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }: FilterDropdownProps) => {
+const SingleFilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }: SingleFilterDropdownProps) => {
   const active = value !== null;
   return (
     <DropdownMenu>
@@ -50,7 +66,7 @@ const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }
           <ChevronDown className="w-4 h-4 opacity-70" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[180px]">
+      <DropdownMenuContent align="start" className="min-w-[200px] max-h-[320px] overflow-y-auto">
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onChange(null)} className="flex items-center justify-between">
@@ -72,20 +88,96 @@ const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }
   );
 };
 
+interface MultiFilterDropdownProps {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (values: string[]) => void;
+}
+
+const MultiFilterDropdown = ({ label, values, options, onChange }: MultiFilterDropdownProps) => {
+  const active = values.length > 0;
+  const toggle = (opt: string) => {
+    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
+  };
+  const display = !active
+    ? label
+    : values.length === 1
+      ? values[0]
+      : `${label} · ${values.length}`;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "h-10 px-4 inline-flex items-center gap-2 rounded-lg border bg-card text-sm transition-colors",
+            active
+              ? "border-primary/50 text-primary bg-primary-soft/40"
+              : "border-border text-foreground/80 hover:border-primary/40 hover:text-foreground"
+          )}
+        >
+          {display}
+          <ChevronDown className="w-4 h-4 opacity-70" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[220px] max-h-[320px] overflow-y-auto">
+        <DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground font-normal">
+          <span>{label}（多选）</span>
+          {active && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange([]);
+              }}
+              className="text-primary hover:underline"
+            >
+              清除
+            </button>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {options.map((opt) => {
+          const checked = values.includes(opt);
+          return (
+            <DropdownMenuItem
+              key={opt}
+              onSelect={(e) => {
+                e.preventDefault();
+                toggle(opt);
+              }}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="inline-flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                    checked ? "bg-primary border-primary" : "border-border"
+                  )}
+                >
+                  {checked && <Check className="w-3 h-3 text-primary-foreground" />}
+                </span>
+                {opt}
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 export default function TopicLibrary() {
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(topics.map((t) => [t.id, t.status === "monitoring"]))
   );
 
-  const categoryOptions = useMemo(
-    () => Array.from(new Set(topics.map((t) => t.category))),
-    []
-  );
   const tagOptions = useMemo(
     () => Array.from(new Set(topics.flatMap((t) => t.tags))),
     []
@@ -96,7 +188,7 @@ export default function TopicLibrary() {
       topics.filter((t) => {
         if (query && !t.title.includes(query) && !t.category.includes(query)) return false;
         if (categoryFilter && t.category !== categoryFilter) return false;
-        if (tagFilter && !t.tags.includes(tagFilter)) return false;
+        if (tagFilters.length > 0 && !tagFilters.some((tag) => t.tags.includes(tag))) return false;
         if (statusFilter !== "all") {
           const enabled = states[t.id];
           if (statusFilter === "monitoring" && !enabled) return false;
@@ -104,7 +196,7 @@ export default function TopicLibrary() {
         }
         return true;
       }),
-    [query, categoryFilter, tagFilter, statusFilter, states]
+    [query, categoryFilter, tagFilters, statusFilter, states]
   );
 
   const statusLabel = STATUS_OPTIONS.find((s) => s.value === statusFilter)?.label ?? "状态";
@@ -130,19 +222,18 @@ export default function TopicLibrary() {
           />
         </div>
 
-        <FilterDropdown
+        <SingleFilterDropdown
           label="专题分类"
           value={categoryFilter}
-          options={categoryOptions}
+          options={CATEGORY_OPTIONS}
           onChange={setCategoryFilter}
           allLabel="全部分类"
         />
-        <FilterDropdown
+        <MultiFilterDropdown
           label="标签"
-          value={tagFilter}
+          values={tagFilters}
           options={tagOptions}
-          onChange={setTagFilter}
-          allLabel="全部标签"
+          onChange={setTagFilters}
         />
 
         {/* 状态下拉（固定枚举） */}
@@ -197,7 +288,7 @@ export default function TopicLibrary() {
             onClick={() => {
               setQuery("");
               setCategoryFilter(null);
-              setTagFilter(null);
+              setTagFilters([]);
               setStatusFilter("all");
             }}
             className="mt-3 text-sm text-primary hover:underline"

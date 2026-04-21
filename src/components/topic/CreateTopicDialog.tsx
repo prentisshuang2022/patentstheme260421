@@ -15,10 +15,12 @@ interface CreateTopicDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const CATEGORIES = ["新能源材料", "智能控制", "人工智能", "生物医药", "新能源", "智能驾驶", "半导体"];
+import { CATEGORY_OPTIONS } from "@/pages/TopicLibrary";
+
+const CATEGORIES = CATEGORY_OPTIONS;
 const REGIONS = ["中国", "美国", "日本", "韩国", "欧洲", "全球"];
 
-const AI_RECOMMENDED_CATEGORIES = ["新能源材料", "人工智能", "新能源"];
+const AI_RECOMMENDED_CATEGORIES = ["人工智能与数据智能", "新能源与储能", "新材料"];
 const AI_EXPANDED_KEYWORDS = ["硫化物电解质", "氧化物电解质", "聚合物电解质", "界面工程", "离子电导率"];
 
 export function CreateTopicDialog({ open, onOpenChange }: CreateTopicDialogProps) {
