@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { topics } from "@/data/topics";
 import { cn } from "@/lib/utils";
+import { CreateTopicDialog } from "@/components/topic/CreateTopicDialog";
 
 const FilterPill = ({ label }: { label: string }) => (
   <button className="h-10 px-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card text-sm text-foreground/80 hover:border-primary/40 hover:text-foreground transition-colors">
@@ -17,6 +18,7 @@ const FilterPill = ({ label }: { label: string }) => (
 
 export default function TopicLibrary() {
   const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(topics.map((t) => [t.id, t.status === "monitoring"]))
   );
@@ -49,7 +51,10 @@ export default function TopicLibrary() {
         <FilterPill label="标签" />
         <FilterPill label="状态" />
         <div className="lg:ml-auto">
-          <Button className="h-10 px-5 bg-gradient-primary hover:opacity-95 shadow-primary text-primary-foreground font-medium">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="h-10 px-5 bg-gradient-primary hover:opacity-95 shadow-primary text-primary-foreground font-medium"
+          >
             <Plus className="w-4 h-4" /> 新建专题库
           </Button>
         </div>
@@ -118,6 +123,8 @@ export default function TopicLibrary() {
           );
         })}
       </div>
+
+      <CreateTopicDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }
