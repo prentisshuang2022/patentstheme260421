@@ -1,32 +1,114 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Eye, Zap, MoreHorizontal, ChevronDown } from "lucide-react";
+import { Search, Plus, Eye, Zap, MoreHorizontal, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { topics } from "@/data/topics";
 import { cn } from "@/lib/utils";
 import { CreateTopicDialog } from "@/components/topic/CreateTopicDialog";
 
-const FilterPill = ({ label }: { label: string }) => (
-  <button className="h-10 px-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card text-sm text-foreground/80 hover:border-primary/40 hover:text-foreground transition-colors">
-    {label}
-    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-  </button>
-);
+type StatusFilter = "all" | "monitoring" | "paused";
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "全部状态" },
+  { value: "monitoring", label: "监控中" },
+  { value: "paused", label: "未监控" },
+];
+
+interface FilterDropdownProps {
+  label: string;
+  value: string | null;
+  options: string[];
+  onChange: (v: string | null) => void;
+  allLabel?: string;
+}
+
+const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }: FilterDropdownProps) => {
+  const active = value !== null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "h-10 px-4 inline-flex items-center gap-2 rounded-lg border bg-card text-sm transition-colors",
+            active
+              ? "border-primary/50 text-primary bg-primary-soft/40"
+              : "border-border text-foreground/80 hover:border-primary/40 hover:text-foreground"
+          )}
+        >
+          {active ? value : label}
+          <ChevronDown className="w-4 h-4 opacity-70" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[180px]">
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onChange(null)} className="flex items-center justify-between">
+          {allLabel}
+          {value === null && <Check className="w-4 h-4 text-primary" />}
+        </DropdownMenuItem>
+        {options.map((opt) => (
+          <DropdownMenuItem
+            key={opt}
+            onClick={() => onChange(opt)}
+            className="flex items-center justify-between"
+          >
+            <span>{opt}</span>
+            {value === opt && <Check className="w-4 h-4 text-primary" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 export default function TopicLibrary() {
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(topics.map((t) => [t.id, t.status === "monitoring"]))
   );
 
-  const filtered = useMemo(
-    () => topics.filter((t) => t.title.includes(query) || t.category.includes(query)),
-    [query]
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(topics.map((t) => t.category))),
+    []
   );
+  const tagOptions = useMemo(
+    () => Array.from(new Set(topics.flatMap((t) => t.tags))),
+    []
+  );
+
+  const filtered = useMemo(
+    () =>
+      topics.filter((t) => {
+        if (query && !t.title.includes(query) && !t.category.includes(query)) return false;
+        if (categoryFilter && t.category !== categoryFilter) return false;
+        if (tagFilter && !t.tags.includes(tagFilter)) return false;
+        if (statusFilter !== "all") {
+          const enabled = states[t.id];
+          if (statusFilter === "monitoring" && !enabled) return false;
+          if (statusFilter === "paused" && enabled) return false;
+        }
+        return true;
+      }),
+    [query, categoryFilter, tagFilter, statusFilter, states]
+  );
+
+  const statusLabel = STATUS_OPTIONS.find((s) => s.value === statusFilter)?.label ?? "状态";
+  const statusActive = statusFilter !== "all";
 
   return (
     <div className="space-y-7">
@@ -47,9 +129,57 @@ export default function TopicLibrary() {
             className="pl-10 h-10 bg-card border-border"
           />
         </div>
-        <FilterPill label="专题分类" />
-        <FilterPill label="标签" />
-        <FilterPill label="状态" />
+
+        <FilterDropdown
+          label="专题分类"
+          value={categoryFilter}
+          options={categoryOptions}
+          onChange={setCategoryFilter}
+          allLabel="全部分类"
+        />
+        <FilterDropdown
+          label="标签"
+          value={tagFilter}
+          options={tagOptions}
+          onChange={setTagFilter}
+          allLabel="全部标签"
+        />
+
+        {/* 状态下拉（固定枚举） */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "h-10 px-4 inline-flex items-center gap-2 rounded-lg border bg-card text-sm transition-colors",
+                statusActive
+                  ? "border-primary/50 text-primary bg-primary-soft/40"
+                  : "border-border text-foreground/80 hover:border-primary/40 hover:text-foreground"
+              )}
+            >
+              {statusActive ? statusLabel : "状态"}
+              <ChevronDown className="w-4 h-4 opacity-70" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[160px]">
+            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">状态</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {STATUS_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                className="flex items-center justify-between"
+              >
+                <span className="inline-flex items-center gap-2">
+                  {opt.value === "monitoring" && <Zap className="w-3.5 h-3.5 text-primary fill-primary" />}
+                  {opt.value === "paused" && <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />}
+                  {opt.label}
+                </span>
+                {statusFilter === opt.value && <Check className="w-4 h-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div className="lg:ml-auto">
           <Button
             onClick={() => setCreateOpen(true)}
@@ -60,74 +190,91 @@ export default function TopicLibrary() {
         </div>
       </div>
 
-      <div className="grid gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((t) => {
-          const enabled = states[t.id];
-          return (
-            <Link
-              key={t.id}
-              to={`/topic/${t.id}`}
-              className="group block bg-card rounded-2xl border border-border p-5 shadow-card hover:shadow-card-hover hover:border-primary/30 transition-all duration-300"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-[17px] font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {t.title}
-                </h3>
-                <Switch
-                  checked={enabled}
-                  onClick={(e) => e.preventDefault()}
-                  onCheckedChange={(v) => setStates((s) => ({ ...s, [t.id]: v }))}
-                />
-              </div>
-
-              <Badge
-                variant="secondary"
-                className="mt-3 bg-secondary text-secondary-foreground/70 font-normal rounded-md"
+      {filtered.length === 0 ? (
+        <div className="bg-card rounded-2xl border border-dashed border-border py-20 text-center">
+          <p className="text-sm text-muted-foreground">没有符合条件的专题库</p>
+          <button
+            onClick={() => {
+              setQuery("");
+              setCategoryFilter(null);
+              setTagFilter(null);
+              setStatusFilter("all");
+            }}
+            className="mt-3 text-sm text-primary hover:underline"
+          >
+            清除筛选
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((t) => {
+            const enabled = states[t.id];
+            return (
+              <Link
+                key={t.id}
+                to={`/topic/${t.id}`}
+                className="group block bg-card rounded-2xl border border-border p-5 shadow-card hover:shadow-card-hover hover:border-primary/30 transition-all duration-300"
               >
-                {t.category}
-              </Badge>
-
-              <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground line-clamp-2 min-h-[40px]">
-                {t.description}
-              </p>
-
-              <div className="mt-5 flex items-center gap-4 text-[13px]">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Eye className="w-4 h-4" />
-                  <span className="text-foreground font-medium">{t.total.toLocaleString()}</span> 篇专利
-                </span>
-                <span className="text-primary font-medium">+{t.weekDelta}</span>
-                <span className="text-muted-foreground">近7天</span>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">更新于 {t.updatedAt}</span>
-                <div className="flex items-center gap-2">
-                  {enabled ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                      <Zap className="w-3.5 h-3.5 fill-primary" />
-                      监控中
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
-                      未监控
-                    </span>
-                  )}
-                  <button
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-[17px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {t.title}
+                  </h3>
+                  <Switch
+                    checked={enabled}
                     onClick={(e) => e.preventDefault()}
-                    className={cn(
-                      "p-1 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                    )}
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
+                    onCheckedChange={(v) => setStates((s) => ({ ...s, [t.id]: v }))}
+                  />
                 </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+
+                <Badge
+                  variant="secondary"
+                  className="mt-3 bg-secondary text-secondary-foreground/70 font-normal rounded-md"
+                >
+                  {t.category}
+                </Badge>
+
+                <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground line-clamp-2 min-h-[40px]">
+                  {t.description}
+                </p>
+
+                <div className="mt-5 flex items-center gap-4 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <Eye className="w-4 h-4" />
+                    <span className="text-foreground font-medium">{t.total.toLocaleString()}</span> 篇专利
+                  </span>
+                  <span className="text-primary font-medium">+{t.weekDelta}</span>
+                  <span className="text-muted-foreground">近7天</span>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">更新于 {t.updatedAt}</span>
+                  <div className="flex items-center gap-2">
+                    {enabled ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                        <Zap className="w-3.5 h-3.5 fill-primary" />
+                        监控中
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                        未监控
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => e.preventDefault()}
+                      className={cn(
+                        "p-1 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      )}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <CreateTopicDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
