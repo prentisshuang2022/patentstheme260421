@@ -123,6 +123,8 @@ export default function TopicLibrary() {
           );
         })}
       </div>
+
+      <CreateTopicDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }
