@@ -15,7 +15,7 @@ interface CreateTopicDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-import { CATEGORY_OPTIONS } from "@/pages/TopicLibrary";
+import { CATEGORY_OPTIONS } from "@/data/categories";
 
 const CATEGORIES = CATEGORY_OPTIONS;
 const REGIONS = ["中国", "美国", "日本", "韩国", "欧洲", "全球"];
