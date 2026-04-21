@@ -16,6 +16,7 @@ import {
 import { topics } from "@/data/topics";
 import { cn } from "@/lib/utils";
 import { CreateTopicDialog } from "@/components/topic/CreateTopicDialog";
+import { CATEGORY_OPTIONS } from "@/data/categories";
 
 type StatusFilter = "all" | "monitoring" | "paused";
 
@@ -23,22 +24,6 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "全部状态" },
   { value: "monitoring", label: "监控中" },
   { value: "paused", label: "未监控" },
-];
-
-export const CATEGORY_OPTIONS = [
-  "人工智能与数据智能",
-  "半导体与电子信息",
-  "通信与网络",
-  "智能制造与工业装备",
-  "新能源与储能",
-  "新材料",
-  "生物医药与医疗器械",
-  "汽车与智能交通",
-  "航空航天与无人系统",
-  "环保与绿色低碳",
-  "消费电子与智能终端",
-  "农业与食品科技",
-  "其他",
 ];
 
 interface SingleFilterDropdownProps {
