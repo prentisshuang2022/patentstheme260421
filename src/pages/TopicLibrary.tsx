@@ -103,10 +103,15 @@ export default function TopicLibrary() {
               <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">更新于 {t.updatedAt}</span>
                 <div className="flex items-center gap-2">
-                  {enabled && (
+                  {enabled ? (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
                       <Zap className="w-3.5 h-3.5 fill-primary" />
                       监控中
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                      未监控
                     </span>
                   )}
                   <button
