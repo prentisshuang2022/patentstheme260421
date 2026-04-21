@@ -25,7 +25,23 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "paused", label: "未监控" },
 ];
 
-interface FilterDropdownProps {
+export const CATEGORY_OPTIONS = [
+  "人工智能与数据智能",
+  "半导体与电子信息",
+  "通信与网络",
+  "智能制造与工业装备",
+  "新能源与储能",
+  "新材料",
+  "生物医药与医疗器械",
+  "汽车与智能交通",
+  "航空航天与无人系统",
+  "环保与绿色低碳",
+  "消费电子与智能终端",
+  "农业与食品科技",
+  "其他",
+];
+
+interface SingleFilterDropdownProps {
   label: string;
   value: string | null;
   options: string[];
@@ -33,7 +49,7 @@ interface FilterDropdownProps {
   allLabel?: string;
 }
 
-const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }: FilterDropdownProps) => {
+const SingleFilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }: SingleFilterDropdownProps) => {
   const active = value !== null;
   return (
     <DropdownMenu>
@@ -50,7 +66,7 @@ const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }
           <ChevronDown className="w-4 h-4 opacity-70" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[180px]">
+      <DropdownMenuContent align="start" className="min-w-[200px] max-h-[320px] overflow-y-auto">
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onChange(null)} className="flex items-center justify-between">
@@ -67,6 +83,86 @@ const FilterDropdown = ({ label, value, options, onChange, allLabel = "全部" }
             {value === opt && <Check className="w-4 h-4 text-primary" />}
           </DropdownMenuItem>
         ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+interface MultiFilterDropdownProps {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (values: string[]) => void;
+}
+
+const MultiFilterDropdown = ({ label, values, options, onChange }: MultiFilterDropdownProps) => {
+  const active = values.length > 0;
+  const toggle = (opt: string) => {
+    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
+  };
+  const display = !active
+    ? label
+    : values.length === 1
+      ? values[0]
+      : `${label} · ${values.length}`;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "h-10 px-4 inline-flex items-center gap-2 rounded-lg border bg-card text-sm transition-colors",
+            active
+              ? "border-primary/50 text-primary bg-primary-soft/40"
+              : "border-border text-foreground/80 hover:border-primary/40 hover:text-foreground"
+          )}
+        >
+          {display}
+          <ChevronDown className="w-4 h-4 opacity-70" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[220px] max-h-[320px] overflow-y-auto">
+        <DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground font-normal">
+          <span>{label}（多选）</span>
+          {active && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange([]);
+              }}
+              className="text-primary hover:underline"
+            >
+              清除
+            </button>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {options.map((opt) => {
+          const checked = values.includes(opt);
+          return (
+            <DropdownMenuItem
+              key={opt}
+              onSelect={(e) => {
+                e.preventDefault();
+                toggle(opt);
+              }}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="inline-flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                    checked ? "bg-primary border-primary" : "border-border"
+                  )}
+                >
+                  {checked && <Check className="w-3 h-3 text-primary-foreground" />}
+                </span>
+                {opt}
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
